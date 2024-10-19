@@ -22,7 +22,7 @@ def main():
     parser.add_argument('--epochs', type=int, default=1000,
                         help='Number of epochs')
     parser.add_argument('--save_dir', type=str, default='logs')
-
+    parser.add_argument('--cuda', type=int, default=0)
     args = parser.parse_args()
 
     m = args.m
@@ -40,17 +40,17 @@ def main():
 
         fig, ax = plt.subplots(2, 1, figsize=(10, 10))
 
-        ax[0].plot(log_dict['epoch'], log_dict['loss'])
+        ax[0].plot(log_dict['epochs'], log_dict['loss'])
         ax[0].set_title('Loss')
         ax[0].set_xlabel('Epoch')
         ax[0].set_ylabel('Loss')
 
-        ax[1].plot(log_dict['epoch'], log_dict['sat'])
+        ax[1].plot(log_dict['epochs'], log_dict['sat'])
         ax[1].set_title('Satisfaction')
         ax[1].set_xlabel('Epoch')
         ax[1].set_ylabel('Satisfaction')
 
-        fig.savefig('logs/emb={}-functional={}-m={}-k={}/plot.png'.format(
+        fig.savefig('logs/emb={}-functional={}-m={}-k={}.png'.format(
             embedding_name, functional_name, m, k
         ))
 
@@ -65,7 +65,8 @@ def main():
     while True:
         print(f"Trying n = {mid}")
         sat, log_dict = experiments(
-            m, mid, k, embedding_name, functional_name, epochs
+            m, mid, k, embedding_name, functional_name, epochs,
+            device='cuda:{}'.format(args.cuda) if args.cuda >= 0 else 'cpu'
         )
 
         plot_log_dict(log_dict)
@@ -82,12 +83,14 @@ def main():
             # increase n
             left = mid
             mid = (left + right) // 2
+            if mid == left:
+                mid += 1
 
         if left == right:
             break
 
 
-    print(f"Minimal n that satisfies the condition: {mid}")
+    print(f"<Result> MED(m={m}, k={k}) < {mid}")
 
 if __name__ == '__main__':
     main()

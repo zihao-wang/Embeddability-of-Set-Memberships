@@ -11,15 +11,14 @@ def init_tol(dataset):
     return max(tol, 10)
 
 
-def experiments(m, n, k, embedding_name, functional_name, epochs=1000):
+def experiments(m, n, k, embedding_name, functional_name, epochs=2000, device='cpu'):
     dataset = SetMembershipDataset(m, k)
     loader = DataLoader(dataset, batch_size=1, num_workers=8, shuffle=True)
 
     Embedding = get_embedding_module(embedding_name)
     model = Embedding(m, n, len(dataset))
 
-    if torch.cuda.is_available():
-        model.cuda()
+    model.to(device)
 
     opt = torch.optim.Adam(model.parameters(), lr=1e-3)
 
@@ -36,8 +35,7 @@ def experiments(m, n, k, embedding_name, functional_name, epochs=1000):
             satisfied = 0
             loss_sum = 0
             for ele_mask, set_id in loader:
-                if torch.cuda.is_available():
-                    ele_mask, set_id = ele_mask.cuda(), set_id.cuda()
+                ele_mask, set_id = ele_mask.to(device), set_id.to(device)
 
                 opt.zero_grad()
                 pele_emb, nele_emb, set_emb = model(ele_mask, set_id)
@@ -62,18 +60,20 @@ def experiments(m, n, k, embedding_name, functional_name, epochs=1000):
             sat = satisfied / len(dataset)
             loss = loss_sum / len(dataset)
 
+            prev_max = max(sat_list) if sat_list else 0
+
             sat_list.append(sat)
             epoch_list.append(e)
             loss_list.append(loss)
 
-            if sat_list and sat <= max(sat_list):
+            if sat_list and sat <= prev_max:
                 tol -= 1
                 if tol < 0:
                     break
-            elif sat == 1:
+            elif sat > 1 - 1e-6:
                 break
             else:
-                tol = init_tol()
+                tol = init_tol(dataset)
 
             t.set_postfix({"sat ratio": sat, "loss": loss})
 
