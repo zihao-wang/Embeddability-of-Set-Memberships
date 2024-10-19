@@ -13,7 +13,7 @@ def init_tol(dataset):
 
 def experiments(m, n, k, embedding_name, functional_name, epochs=2000, device='cpu'):
     dataset = SetMembershipDataset(m, k)
-    loader = DataLoader(dataset, batch_size=1, num_workers=8, shuffle=True)
+    loader = DataLoader(dataset, batch_size=32, num_workers=8, shuffle=True)
 
     Embedding = get_embedding_module(embedding_name)
     model = Embedding(m, n, len(dataset))
@@ -37,14 +37,32 @@ def experiments(m, n, k, embedding_name, functional_name, epochs=2000, device='c
             for ele_mask, set_id in loader:
                 ele_mask, set_id = ele_mask.to(device), set_id.to(device)
 
+                # ele_mask [batch, m]
+                # set_id [batch]
                 opt.zero_grad()
-                pele_emb, nele_emb, set_emb = model(ele_mask, set_id)
 
-                assert pele_emb.size(0) == ele_mask.sum()
-                assert nele_emb.size(0) + pele_emb.size(0) == ele_mask.size(0)
+                set_emb = model(set_id) # [batch, n]
+                ele_emb = model.ele_emb.weight # [m, n]
 
-                pos_metric = functional(pele_emb, set_emb)
-                neg_metric = functional(nele_emb, set_emb)
+                # ele_mask is a boolean mask of batch sizes
+                # apply it to ele_emb per batch, and gather it into pele_emb
+                # the shape of pele_emb is [batches of positive samples, n]
+
+                indices = ele_mask.nonzero(as_tuple=False)
+                pele_emb = ele_emb[indices[:, 1]]  # use only the relevant indices for selection
+                num_pele_per_batch = ele_mask.sum(1)
+                set_emb_p = set_emb.repeat_interleave(num_pele_per_batch, dim=0)
+
+                # apply the negation of ele_mask to ele_emb per batch,
+                # and gather it into nele_emb
+                # the shape of nele_emb is [batches of negative samples, n]
+                indices = (~ele_mask).nonzero(as_tuple=False)
+                nele_emb = ele_emb[indices[:, 1]]  # use only the relevant indices for selection
+                num_nele_per_batch = (~ele_mask).sum(1)
+                set_emb_n = set_emb.repeat_interleave(num_nele_per_batch, dim=0)
+
+                pos_metric = functional(pele_emb, set_emb_p)
+                neg_metric = functional(nele_emb, set_emb_n)
 
                 pos_loss = pos_metric.view(-1, 1)
                 neg_loss = neg_metric.view(1, -1)

@@ -13,16 +13,18 @@ def main():
     parser = argparse.ArgumentParser(
         description='Solve the minimal embeddable dimension'
     )
-    parser.add_argument('-M', '--m', type=int, help='Number of elements in a set')
-    parser.add_argument('-K', '--k', type=int, help='Number of sets')
+    parser.add_argument('-M', '--m', type=int, default=16,
+                        help='Number of elements in a set')
+    parser.add_argument('-K', '--k', type=int, default=2,
+                        help='Number of sets')
     parser.add_argument('-E', '--embedding_name', type=str,
-                        help='Name of the embedding module')
+                        default='tabular', help='Name of the embedding module')
     parser.add_argument('-F', '--functional_name', type=str,
-                        help='Name of the functional')
+                        default='inner_product', help='Name of the functional')
     parser.add_argument('--epochs', type=int, default=1000,
                         help='Number of epochs')
     parser.add_argument('--save_dir', type=str, default='logs')
-    parser.add_argument('--cuda', type=int, default=0)
+    parser.add_argument('--cuda', type=int, default=-1)
     args = parser.parse_args()
 
     m = args.m
