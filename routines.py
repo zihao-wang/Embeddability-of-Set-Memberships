@@ -47,7 +47,6 @@ def experiments(m, n, k, embedding_name, functional_name, epochs=2000, device='c
                 # ele_mask is a boolean mask of batch sizes
                 # apply it to ele_emb per batch, and gather it into pele_emb
                 # the shape of pele_emb is [batches of positive samples, n]
-
                 indices = ele_mask.nonzero(as_tuple=False)
                 pele_emb = ele_emb[indices[:, 1]]  # use only the relevant indices for selection
                 num_pele_per_batch = ele_mask.sum(1)
@@ -62,21 +61,26 @@ def experiments(m, n, k, embedding_name, functional_name, epochs=2000, device='c
                 set_emb_n = set_emb.repeat_interleave(num_nele_per_batch, dim=0)
 
                 pos_metric = functional(pele_emb, set_emb_p)
+                max_pos_metric_per_batch = torch.cat([
+                    m.max().reshape(1,)
+                    for m in torch.split(pos_metric, num_pele_per_batch.tolist())
+                ])
                 neg_metric = functional(nele_emb, set_emb_n)
+                min_neg_metric_per_batch = torch.cat([
+                    m.min().reshape(1,)
+                    for m in torch.split(neg_metric, num_nele_per_batch.tolist())
+                ])
 
-                pos_loss = pos_metric.view(-1, 1)
-                neg_loss = neg_metric.view(1, -1)
+                loss = torch.relu(max_pos_metric_per_batch - min_neg_metric_per_batch).mean()
 
-                loss = torch.relu(pos_loss - neg_loss).mean()
-
-                satisfied += float(pos_metric.max() < neg_metric.min())
+                satisfied += torch.mean((max_pos_metric_per_batch < min_neg_metric_per_batch).float()).item()
                 loss_sum += loss.item()
 
                 loss.backward()
                 opt.step()
 
-            sat = satisfied / len(dataset)
-            loss = loss_sum / len(dataset)
+            sat = satisfied / len(loader)
+            loss = loss_sum / len(loader)
 
             prev_max = max(sat_list) if sat_list else 0
 
