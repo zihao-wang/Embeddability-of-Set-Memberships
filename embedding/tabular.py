@@ -13,7 +13,6 @@ class TabularEmbedding(nn.Module):
         self.ele_emb = nn.Embedding(m, n)
         self.set_emb = nn.Embedding(num_sets, n)
 
-    def forward(self, set_bin_repr, set_id):
-        set_bin_repr.squeeze_()
+    def forward(self, set_id):
         set_id.squeeze_()
-        return self.ele_emb.weight[set_bin_repr], self.ele_emb.weight[~set_bin_repr], self.set_emb(set_id)
+        return self.set_emb(set_id)

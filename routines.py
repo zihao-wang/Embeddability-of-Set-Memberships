@@ -27,8 +27,6 @@ def experiments(m, n, k, embedding_name, functional_name, epochs=1000):
     sat_list = []
     loss_list = []
 
-    track_log = []
-
     tol = init_tol(dataset)
 
     functional = get_functional(functional_name)

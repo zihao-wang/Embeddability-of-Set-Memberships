@@ -11,7 +11,8 @@ from routines import experiments
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Solve the minimal embeddable dimension')
+        description='Solve the minimal embeddable dimension'
+    )
     parser.add_argument('-M', '--m', type=int, help='Number of elements in a set')
     parser.add_argument('-K', '--k', type=int, help='Number of sets')
     parser.add_argument('-E', '--embedding_name', type=str,
