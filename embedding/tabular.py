@@ -10,8 +10,8 @@ class TabularEmbedding(nn.Module):
         super().__init__()
         self.m = m
         self.n = n
-        self.ele_emb = nn.Embedding(m, n)
-        self.set_emb = nn.Embedding(num_sets, n)
+        self.ele_emb = nn.Embedding(m, n, max_norm=1.0)
+        self.set_emb = nn.Embedding(num_sets, n, max_norm=1.0)
 
     def forward(self, set_bin_repr, set_id):
         set_bin_repr.squeeze_()
