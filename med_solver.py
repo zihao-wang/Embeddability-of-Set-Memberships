@@ -21,8 +21,10 @@ def main():
                         default='tabular', help='Name of the embedding module')
     parser.add_argument('-F', '--functional_name', type=str,
                         default='inner_product', help='Name of the functional')
-    parser.add_argument('--epochs', type=int, default=1000,
+    parser.add_argument('--epochs', type=int, default=10000,
                         help='Number of epochs')
+    parser.add_argument('--batch_size', type=int, default=512,
+                        help='Number of batch size')
     parser.add_argument('--save_dir', type=str, default='logs')
     parser.add_argument('--cuda', type=int, default=-1)
     args = parser.parse_args()
@@ -32,7 +34,7 @@ def main():
     embedding_name = args.embedding_name
     functional_name = args.functional_name
     epochs = args.epochs
-
+    batch_size = args.batch_size
     os.makedirs(args.save_dir, exist_ok=True)
 
 
@@ -67,7 +69,7 @@ def main():
     while True:
         print(f"Trying n = {mid}")
         sat, log_dict = experiments(
-            m, mid, k, embedding_name, functional_name, epochs,
+            m, mid, k, embedding_name, functional_name, epochs, batch_size,
             device='cuda:{}'.format(args.cuda) if args.cuda >= 0 else 'cpu'
         )
 
@@ -85,10 +87,8 @@ def main():
             # increase n
             left = mid
             mid = (left + right) // 2
-            if mid == left:
-                mid += 1
 
-        if left == right:
+        if left + 1 >= right:
             break
 
 

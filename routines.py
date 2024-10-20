@@ -8,25 +8,25 @@ from functionals import get_functional
 
 def init_tol(dataset):
     tol = 10000 // len(dataset) + 10
-    return max(tol, 10)
+    return max(tol, 20)
 
 
-def experiments(m, n, k, embedding_name, functional_name, epochs=2000, device='cpu'):
+def experiments(m, n, k, embedding_name, functional_name, epochs=2000, batch_size=512, device='cpu'):
     dataset = SetMembershipDataset(m, k)
-    loader = DataLoader(dataset, batch_size=32, num_workers=8, shuffle=True)
+    loader = DataLoader(dataset, batch_size=batch_size, num_workers=8, shuffle=True)
 
     Embedding = get_embedding_module(embedding_name)
     model = Embedding(m, n, len(dataset))
 
     model.to(device)
 
-    opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+    opt = torch.optim.Adam(model.parameters(), lr=1e-2)
 
     epoch_list = []
     sat_list = []
     loss_list = []
 
-    tol = init_tol(dataset)
+    tol = init_tol(loader)
 
     functional = get_functional(functional_name)
 
@@ -95,7 +95,7 @@ def experiments(m, n, k, embedding_name, functional_name, epochs=2000, device='c
             elif sat > 1 - 1e-6:
                 break
             else:
-                tol = init_tol(dataset)
+                tol = init_tol(loader)
 
             t.set_postfix({"sat ratio": sat, "loss": loss})
 
